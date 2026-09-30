@@ -13,9 +13,9 @@ The model uses **transfer learning with EfficientNet-B0** and a custom-built dat
 
 | Part     | Link                                  |
 | -------- | ------------------------------------- |
-| Frontend | https://YOUR-APP.vercel.app           |
-| API      | https://YOUR-APP.onrender.com         |
-| API docs | https://YOUR-APP.onrender.com/docs    |
+| Frontend | https://spotfake-frontend.vercel.app           |
+| API      | https://spot-fake-api.onrender.com         |
+| API docs | https://spot-fake-api.onrender.com/docs    |
 
 > The API is hosted on a free tier, so the first request after a period of inactivity can take 30-60 seconds while the server wakes up.
 
