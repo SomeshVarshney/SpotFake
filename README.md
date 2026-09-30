@@ -1,64 +1,61 @@
-# 🖥️ Screen vs Real Image Detection
+# Screen vs Real Image Detection
 
-A deep learning-based computer vision project that classifies whether an input image is:
+A deep learning project that classifies whether an input image is:
 
-- 📷 A Real Photograph
-- 🖥️ A Photograph of a Digital Screen
+- **Real Image**: a photograph of a real scene
+- **Screen Image**: a photograph of a digital screen (monitor, phone, TV)
 
-The project uses **Transfer Learning** with **EfficientNet-B0** and a custom-built dataset to achieve high classification performance while maintaining fast inference suitable for real-time applications.
-
----
-
-# Features
-
-- EfficientNet-B0 Transfer Learning
-- Two-stage Fine-Tuning
-- Automatic Prediction
-- Confidence Score
-- ROC-AUC Evaluation
-- Threshold Optimization
-- Benchmarking Script
-- GPU/CPU Support
-- Interactive Prediction Tool
+The model uses **transfer learning with EfficientNet-B0** and a custom-built dataset, giving strong accuracy with fast inference. It is served through a **FastAPI** backend and a lightweight web frontend.
 
 ---
 
-# Model
+## Live Demo
 
-Backbone
+| Part     | Link                                  |
+| -------- | ------------------------------------- |
+| Frontend | https://YOUR-APP.vercel.app           |
+| API      | https://YOUR-APP.onrender.com         |
+| API docs | https://YOUR-APP.onrender.com/docs    |
 
-- EfficientNet-B0 (ImageNet Pretrained)
-
-Classifier
-
-- Dropout
-- Fully Connected Layer
-- Softmax Output
-
-Loss
-
-- CrossEntropy Loss
-
-Optimizer
-
-- AdamW
-
-Learning Rate Scheduler
-
-- Cosine Annealing LR
+> The API is hosted on a free tier, so the first request after a period of inactivity can take 30-60 seconds while the server wakes up.
 
 ---
 
-# Dataset
+## Features
 
-Custom Dataset
+- EfficientNet-B0 transfer learning
+- Two-stage fine-tuning
+- Prediction with confidence score
+- ROC-AUC evaluation and threshold optimization
+- Benchmarking script
+- GPU / CPU support
+- REST API (FastAPI) with CORS enabled
+- Simple web frontend with image preview and re-upload
 
-Classes
+---
 
-- Real Images
-- Screen Images
+## Model
 
-Dataset Statistics
+| Component | Details                          |
+| --------- | -------------------------------- |
+| Backbone  | EfficientNet-B0 (ImageNet pretrained) |
+| Classifier| Dropout (0.35) + Fully Connected layer |
+| Output    | Softmax over 2 classes (0 = real, 1 = screen) |
+| Loss      | CrossEntropy                     |
+| Optimizer | AdamW                            |
+| Scheduler | Cosine Annealing LR              |
+| Input     | 224 x 224 RGB                    |
+
+### Training Strategy
+
+1. **Stage 1:** freeze the backbone, train the classifier head.
+2. **Stage 2:** unfreeze the backbone, fine-tune the whole network at a low learning rate.
+
+---
+
+## Dataset
+
+Custom dataset collected under varied lighting, camera angles, distances, reflections and display devices.
 
 | Class  | Images |
 | ------ | ------ |
@@ -66,25 +63,9 @@ Dataset Statistics
 | Screen | 209    |
 | Total  | 453    |
 
-Images were collected under various lighting conditions, camera angles, distances, reflections, and display devices to improve generalization.
-
 ---
 
-# Training Strategy
-
-### Stage 1
-
-- Freeze EfficientNet backbone
-- Train classifier head
-
-### Stage 2
-
-- Unfreeze backbone
-- Fine-tune complete network
-
----
-
-# Evaluation
+## Evaluation
 
 | Metric    | Score  |
 | --------- | ------ |
@@ -94,130 +75,173 @@ Images were collected under various lighting conditions, camera angles, distance
 | F1 Score  | 88.84% |
 | ROC-AUC   | 95.80% |
 
----
+## Benchmark
 
-# Benchmark
-
-Average GPU inference time
-
-8–10 ms
-
-Throughput
-
-100+ FPS (hardware dependent)
-
-Framework
-
-PyTorch
+- Average GPU inference time: **8-10 ms**
+- Throughput: **100+ FPS** (hardware dependent)
+- Framework: PyTorch
 
 ---
 
-# Project Structure
+## Project Structure
 
 ```text
 spot_fake/
-
+├── api.py                     # FastAPI server (POST /predict)
+├── requirements.txt           # Full environment (training + evaluation)
+├── requirements-deploy.txt    # Slim CPU-only dependencies for deployment
+├── frontend/
+│   └── index.html             # Single-file web UI
 ├── checkpoints/
-│   └── best_model.pth
-
+│   └── best_model.pth         # Trained weights
 ├── src/
 │   ├── benchmark.py
 │   ├── config.py
 │   ├── dataset.py
 │   ├── engine.py
 │   ├── evaluate.py
+│   ├── features.py            # Handcrafted feature extraction (experimental)
 │   ├── model.py
-│   ├── predict.py
+│   ├── predict.py             # Command-line prediction
 │   ├── train.py
 │   └── utils.py
-
-├── README.md
-├── requirements.txt
-└── .gitignore
+├── images/                    # Example images
+└── README.md
 ```
 
 ---
 
-# Installation
+## Installation
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/screen-vs-real-image-detection.git
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
+cd YOUR_REPO
 
-cd screen-vs-real-image-detection
+python -m venv venv
+venv\Scripts\activate          # Windows
+# source venv/bin/activate     # Linux / macOS
 
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 ---
 
-# Usage
+## Usage
 
-Train
+Run all commands from the project root.
 
+**Train**
 ```bash
 python src/train.py
 ```
 
-Evaluate
-
+**Evaluate**
 ```bash
 python src/evaluate.py
 ```
 
-Predict
-
+**Predict (command line)**
 ```bash
-python src/predict.py
+python src/predict.py path/to/image.jpg
 ```
+Run without an argument for interactive mode.
 
-Benchmark
-
+**Benchmark**
 ```bash
 python src/benchmark.py
 ```
 
 ---
 
-# Example Prediction
+## Run the Web App Locally
 
+**1. Start the API**
+```bash
+python -m pip install fastapi uvicorn python-multipart
+uvicorn api:app --reload
 ```
-Prediction : SCREEN IMAGE
+The API runs at `http://127.0.0.1:8000` (interactive docs at `/docs`).
 
-Confidence : 97.12 %
+**2. Open the frontend**
+```bash
+cd frontend
+python -m http.server 5500
+```
+Then open `http://127.0.0.1:5500/index.html`.
 
-Inference Time : 8.31 ms
+In `frontend/index.html`, `API_URL` controls which backend the page talks to.
+
+---
+
+## API
+
+### `GET /`
+Health check.
+```json
+{ "status": "ok", "device": "cpu" }
+```
+
+### `POST /predict`
+Send an image as `multipart/form-data` with the field name `file`.
+
+```bash
+curl -X POST "http://127.0.0.1:8000/predict" -F "file=@images/example.jpg"
+```
+
+Response:
+```json
+{
+  "label": "SCREEN IMAGE",
+  "confidence": 0.9712,
+  "real_probability": 0.0288,
+  "screen_probability": 0.9712,
+  "time_ms": 41.3
+}
 ```
 
 ---
 
-# Future Improvements
+## Deployment
+
+| Part     | Platform | Settings |
+| -------- | -------- | -------- |
+| Backend  | Render (Web Service) | Build: `pip install -r requirements-deploy.txt`<br>Start: `uvicorn api:app --host 0.0.0.0 --port $PORT`<br>Env var: `PYTHON_VERSION=3.11.9` |
+| Frontend | Vercel   | Root directory: `frontend`, framework preset: Other, no build command |
+
+After the backend is live, set `API_URL` in `frontend/index.html` to the Render URL.
+
+---
+
+## Example Predictions
+
+<table>
+  <tr>
+    <td align="center"><b>Real Image</b></td>
+    <td align="center"><b>Screen Image</b></td>
+  </tr>
+  <tr>
+    <td><img src="images/real_example.jpeg" width="300"></td>
+    <td><img src="images/screen_example.jpeg" width="300"></td>
+  </tr>
+</table>
+
+---
+
+## Future Improvements
 
 - Larger and more diverse dataset
 - ConvNeXt / EfficientNet-B3 backbone
-- ONNX export
-- TensorRT acceleration
+- ONNX export and TensorRT acceleration
 - Mobile deployment
-- Web application using Streamlit or FastAPI
 
 ---
 
-# Tech Stack
+## Tech Stack
 
-- Python
-- PyTorch
-- TorchVision
-- Albumentations
-- NumPy
-- OpenCV
-- Matplotlib
-- Scikit-learn
+Python, PyTorch, TorchVision, Albumentations, NumPy, OpenCV, Scikit-learn, Matplotlib, FastAPI, Uvicorn, HTML/CSS/JavaScript
 
 ---
-# Results
-### Prediction Example
-![real](spot_fake\images\images (1).jpeg)
-![screen](spot_fake/images/WhatsApp Image 2026-07-02 at 3.37.32 PM.jpeg
 
-# Author
+## Author
 
 **Somesh Varshney**
