@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spot Fake – Real vs Screen Image Detector</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --good:#22c55e; --bad:#ef4444; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+         background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,sans-serif; padding:16px; }
+  .card { background:var(--card); width:100%; max-width:460px; border-radius:16px; padding:28px; text-align:center; }
+  h1 { margin:0 0 4px; font-size:1.5rem; }
+  p.sub { margin:0 0 20px; color:var(--muted); font-size:.9rem; }
+  .drop { border:2px dashed #475569; border-radius:12px; padding:24px; cursor:pointer; }
+  .drop:hover { border-color:var(--accent); }
+  img { max-width:100%; max-height:280px; border-radius:8px; display:none; margin:0 auto; }
+  button { margin-top:16px; width:100%; padding:12px; border:0; border-radius:10px; background:var(--accent);
+           color:#fff; font-size:1rem; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  button.secondary { background:transparent; border:1px solid #475569; color:var(--text); margin-top:12px; }
+  button.secondary:hover { border-color:var(--accent); }
+  [hidden] { display:none !important; }
+  #result { margin-top:20px; font-size:1.2rem; font-weight:600; }
+  .real { color:var(--good); } .screen { color:var(--bad); } .err { color:var(--bad); font-size:.95rem; }
+  small { color:var(--muted); font-weight:400; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Spot Fake</h1>
+  <p class="sub">Upload an image to check if it's a real photo or a photo of a screen.</p>
+
+  <label class="drop" for="file">
+    <span id="hint">Click to choose an image</span>
+    <img id="preview" alt="preview">
+  </label>
+  <input id="file" type="file" accept="image/*" hidden>
+
+  <button id="btn" disabled>Analyze</button>
+  <div id="result"></div>
+  <button id="again" class="secondary" hidden>Upload another image</button>
+</div>
+
+<script>
+  // 👉 Change this to your Render backend URL after deploying (no trailing slash)
+  const API_URL = "http://127.0.0.1:8000";
+  // 👉 Change if your endpoint / form field name differ
+  const ENDPOINT = "/predict";
+  const FIELD = "file";
+
+  const fileInput = document.getElementById("file");
+  const preview = document.getElementById("preview");
+  const hint = document.getElementById("hint");
+  const btn = document.getElementById("btn");
+  const result = document.getElementById("result");
+  const again = document.getElementById("again");
+
+  fileInput.addEventListener("change", () => {
+    const f = fileInput.files[0];
+    if (!f) return;
+    if (preview.src) URL.revokeObjectURL(preview.src);
+    preview.src = URL.createObjectURL(f);
+    preview.style.display = "block";
+    hint.style.display = "none";
+    btn.disabled = false;
+    again.hidden = true;
+    result.className = "";
+    result.textContent = "";
+  });
+
+  again.addEventListener("click", () => {
+    fileInput.value = "";          // lets you re-pick the same file
+    preview.removeAttribute("src");
+    preview.style.display = "none";
+    hint.style.display = "";
+    btn.disabled = true;
+    result.className = "";
+    result.textContent = "";
+    again.hidden = true;
+    fileInput.click();             // open the file picker right away
+  });
+
+  btn.addEventListener("click", async () => {
+    const f = fileInput.files[0];
+    if (!f) return;
+    btn.disabled = true;
+    result.className = "";
+    result.textContent = "Analyzing… (first request may take ~30s on free hosting)";
+    try {
+      const fd = new FormData();
+      fd.append(FIELD, f);
+      const res = await fetch(API_URL + ENDPOINT, { method: "POST", body: fd });
+      if (!res.ok) throw new Error("Server returned " + res.status);
+      const data = await res.json();
+      show(data);
+    } catch (e) {
+      result.className = "err";
+      result.textContent = "Error: " + e.message;
+    } finally {
+      btn.disabled = false;
+      again.hidden = false;
+    }
+  });
+
+  // Adjust the keys below to match your backend's JSON response
+  function show(d) {
+    const label = String(d.label ?? d.prediction ?? d.class ?? JSON.stringify(d));
+    let conf = d.confidence ?? d.probability ?? d.score;
+    if (typeof conf === "number") conf = (conf <= 1 ? conf * 100 : conf).toFixed(1) + "%";
+    const isScreen = /screen|fake/i.test(label);
+    result.className = isScreen ? "screen" : "real";
+    result.innerHTML = label + (conf ? " <small>(" + conf + " confidence)</small>" : "");
+  }
+</script>
+</body>
+</html>
